@@ -7,7 +7,9 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.time.LocalDateTime;
@@ -17,12 +19,14 @@ import java.util.*;
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
     private final BotConfig config;
-    private Random random = new Random();
 
+    private Map<Long, Boolean> firstTimeUser = new HashMap<>();
     private Map<Long, String> currentChallenges = new HashMap<>();
     private Map<Long, Integer> currentChallengeIndices = new HashMap<>(); // Добавили для отслеживания индексов слов
-
     private Map<String, List<String>> challengeOptions = new HashMap<>();
+    private List<String> wordOptions = new ArrayList<>();
+    private Map<Long, Integer> sentenceIndices = new HashMap<>();
+
 
     public TelegramBot(BotConfig config) {
         this.config = config;
@@ -35,6 +39,18 @@ public class TelegramBot extends TelegramLongPollingBot {
         challengeOptions.put("кот", Arrays.asList("cat", "dog", "cucumber", "lamb"));
         // Добавьте другие слова и варианты ответов по аналогии
     }
+
+    private List<String> getSentenceOptions() {
+        List<String> sentenceOptions = new ArrayList<>();
+        sentenceOptions.add("I love you");
+        sentenceOptions.add("Hello, world");
+        sentenceOptions.add("How are you?");
+        // Добавьте другие фразы и предложения по аналогии
+
+        return sentenceOptions;
+    }
+
+
 
     @Override
     public String getBotToken() {
@@ -53,38 +69,48 @@ public class TelegramBot extends TelegramLongPollingBot {
         } else if (update.hasCallbackQuery()) {
             handleCallbackQuery(update.getCallbackQuery());
         }
+
     }
 
     private void handleTextMessage(Update update) {
         String messageText = update.getMessage().getText();
         long chatId = update.getMessage().getChatId();
 
-        switch (messageText) {
-            case "/start":
-                startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
-                break;
-            case "/help":
-                sendMessage(chatId, "Привет, я Telegram bot. Вот несколько команд, которые ты можешь использовать: " +
-                        "\n /help - вывести информацию о командах " +
-                        "\n /start - показать стартовое сообщение " +
-                        "\n /time - показать время" +
-                        "\n /challenge - перевести слово на английский");
-                break;
-            case "/time":
-                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/uu HH:mm:ss");
-                LocalDateTime now = LocalDateTime.now();
-                sendMessage(chatId, dtf.format(now));
-                break;
-            case "/challenge":
-                sendChallengeOptions(chatId);
-                break;
-            case "/endchallenge":
-                endChallenge(chatId);
-                break;
-            default:
-                sendMessage(chatId, "Извините, команда не распознана");
+        boolean isFirstTime = firstTimeUser.getOrDefault(chatId, true);
+
+            switch (messageText) {
+                case "/start":
+                    startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
+                    break;
+                case "/help":
+                    sendMessage(chatId, "Привет, я Telegram bot. Вот несколько команд, которые ты можешь использовать: " +
+                            "\n /help - вывести информацию о командах " +
+                            "\n /start - показать стартовое сообщение " +
+                            "\n /time - показать время" +
+                            "\n /challenge - перевести слово на английский");
+                    break;
+                case "/time":
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/uu HH:mm:ss");
+                    LocalDateTime now = LocalDateTime.now();
+                    sendMessage(chatId, dtf.format(now));
+                    break;
+                case "/challenge":
+                    sendChallengeOptions(chatId);
+                    break;
+                case "/endchallenge":
+                    endChallenge(chatId);
+                    break;
+                case "/sentence":
+                    sendSentenceOptions(chatId);
+                    break;
+                default:
+                    sendMessage(chatId, "Извините, команда не распознана");
+            }
+
         }
-    }
+
+
+
 
     private void endChallenge(long chatId) {
         currentChallenges.remove(chatId);
@@ -96,6 +122,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         String data = callbackQuery.getData();
         long chatId = callbackQuery.getMessage().getChatId();
 
+
+
         if (data.equals("correct")) {
             sendMessage(chatId, "Правильно! Отличная работа!");
             sendChallengeOptions(chatId); // Отправляем новое слово для угадывания
@@ -103,6 +131,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             sendMessage(chatId, "Увы, неправильно. Попробуйте еще раз.");
             // Не отправляем новые варианты, а повторно отправляем текущий вызов
             String currentChallenge = currentChallenges.get(chatId);
+            System.out.println(currentChallenge);
             sendChallengeOptions(chatId, currentChallenge);
         }
     }
@@ -124,6 +153,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
+
+
     private void sendChallengeOptions(long chatId) {
         int challengeIndex = currentChallengeIndices.getOrDefault(chatId, 0);
         int totalChallenges = challengeOptions.size();
@@ -137,9 +168,66 @@ public class TelegramBot extends TelegramLongPollingBot {
         currentChallenges.put(chatId, challenge); // Сохраняем текущее слово для угадывания
         sendChallengeOptions(chatId, challenge); // Отправляем варианты ответов
 
+
         // Обновляем индекс для следующего вызова
         challengeIndex = (challengeIndex + 1) % totalChallenges;
         currentChallengeIndices.put(chatId, challengeIndex);
+    }
+
+
+    // Выводит предложения с вариантами ответов (кнопки пока не работают)
+    private void sendSentenceOptions(long chatId){
+
+        List<String> sentenceOptions = getSentenceOptions();
+
+        if (sentenceOptions.isEmpty()) {
+            sendMessage(chatId, "Список доступных фраз пуст.");
+            return;
+        }
+
+        int currentIndex = sentenceIndices.getOrDefault(chatId, 0);
+
+        if (currentIndex >= sentenceOptions.size()) {
+            // Если пользователь прошел все доступные предложения, вы можете выполнить какое-либо действие
+            sendMessage(chatId, "Вы завершили все доступные предложения.");
+            return;
+        }
+
+        String sentence = sentenceOptions.get(currentIndex);
+
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText("Выберите корректные слова чтобы составить предложение правильно: ");
+
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> keyboardRows = new ArrayList<>();
+
+
+        String[] words = sentence.split(" "); // разделяю слова
+        Collections.shuffle(Arrays.asList(words)); // перемешиваю слова
+
+        for (String word : words) {
+            KeyboardRow row = new KeyboardRow();
+            row.add(word);
+            keyboardRows.add(row);
+
+        }
+        KeyboardRow ruleRow = new KeyboardRow();
+        ruleRow.add("Справка ✅");
+        keyboardRows.add(ruleRow);
+
+
+
+        keyboardMarkup.setKeyboard(keyboardRows);
+
+        message.setReplyMarkup(keyboardMarkup);
+
+
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
     }
 
     private void sendChallengeOptions(long chatId, String challenge) {
@@ -194,7 +282,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
 
         // Перемешиваем варианты ответов
-        Collections.shuffle(options);
+        //Collections.shuffle(options);
 
         return options;
     }
