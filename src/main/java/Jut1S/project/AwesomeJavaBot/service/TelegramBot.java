@@ -76,7 +76,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 sendMessage(chatId, dtf.format(now));
                 break;
             case "/challenge":
-
+                sendChallengeOptions(chatId);
                 break;
             case "/endchallenge":
                 endChallenge(chatId);
@@ -98,7 +98,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         if (data.equals("correct")) {
             sendMessage(chatId, "Правильно! Отличная работа!");
-
+            sendChallengeOptions(chatId);
         } else if (data.equals("incorrect")) {
             sendMessage(chatId, "Увы, неправильно. Попробуйте еще раз.");
             // Не отправляем новые варианты, а повторно отправляем текущий вызов
@@ -182,5 +182,28 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private String getCorrectTranslation(String word) {
         return challengeOptions.get(word).get(0);
+    }
+
+    private String getChallengeByIndex(int index) {
+        List<String> challenges = new ArrayList<>(challengeOptions.keySet());
+        return challenges.get(index);
+    }
+
+    private void sendChallengeOptions(long chatId) {
+        int challengeIndex = currentChallengeIndices.getOrDefault(chatId, 0);
+        int totalChallenges = challengeOptions.size();
+
+        if (totalChallenges == 0) {
+            sendMessage(chatId, "Список слов пуст.");
+            return;
+        }
+
+        String challenge = getChallengeByIndex(challengeIndex);
+        currentChallenges.put(chatId, challenge); // Сохраняем текущее слово для угадывания
+        sendChallengeOptions(chatId, challenge); // Отправляем варианты ответов
+
+        // Обновляем индекс для следующего вызова
+        challengeIndex = (challengeIndex + 1) % totalChallenges;
+        currentChallengeIndices.put(chatId, challengeIndex);
     }
 }
