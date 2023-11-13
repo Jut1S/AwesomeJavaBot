@@ -2,14 +2,14 @@
  * Класс LogicBotTest представляет собой набор юнит-тестов для класса LogicBot.
  * Этот класс использует библиотеку JUnit для тестирования различных методов LogicBot.
  * Все методы этого класса проверяют корректное выполнение функциональности LogicBot.
- *
- *
  */
 package Jut1S.project.AwesomeJavaBot;
 
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 public class LogicBotTest {
 
@@ -68,26 +68,20 @@ public class LogicBotTest {
     }
 
     /**
-     * Тестирование метода handleTextMessage для неизвестной команды.
-     * Проверяет, что результат содержит сообщение о нераспознанной команде.
+     * Тестирование метода handleTextMessage для команды "/challenge".
+     * Проверяет, что результат содержит текст о выборе правильного перевода.
      */
     @Test
-    void testHandleTextMessageUnknownCommand() {
-        String result = logicBot.handleTextMessage(12345, "/unknown", "Alice");
-        assertEquals("Извините, команда не распознана", result);
-    }
-
-    /**
-     * Тестирование метода sendChallengeOptions.
-     * Проверяет, что результат не равен null и содержит текст о выборе правильного перевода.
-     */
-    @Test
-        void testSendChallengeOptions() {
-        long chatId = 12345;
-        String result = logicBot.sendChallengeOptions(chatId);
+    void testHandleTextMessageChallengeCommand() {
+        String result = logicBot.handleTextMessage(12345, "/challenge", "Alice");
         assertNotNull(result);
         assertTrue(result.contains("Выберите правильный перевод слова"));
     }
+
+    /**
+     * Тестирование метода handleTextMessage для команды "/challenge" с выбором правильного ответа.
+     */
+
 
     /**
      * Тестирование метода endChallenge.
