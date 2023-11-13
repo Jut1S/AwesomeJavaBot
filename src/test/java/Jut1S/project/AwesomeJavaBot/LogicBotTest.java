@@ -81,7 +81,28 @@ public class LogicBotTest {
     /**
      * Тестирование метода handleTextMessage для команды "/challenge" с выбором правильного ответа.
      */
+    @Test
+    void testHandleTextMessageChallengeCommandWithAnswer() {
+        long chatId = 12345;
+        String challengeMessage = logicBot.handleTextMessage(chatId, "/challenge", "Alice");
+        System.out.println(challengeMessage);
 
+        // Получаем варианты ответов и выводим их
+        List<String> answerOptions = logicBot.getAnswerOptions(chatId);
+        System.out.println("Варианты ответов: " + answerOptions);
+
+        // Находим правильный ответ в вариантах
+        String correctAnswer = logicBot.getCorrectTranslation(logicBot.getCurrentChallenges().get(chatId));
+
+        // Проверяем ответ пользователя, всегда выбирая правильный ответ
+        boolean isCorrect = logicBot.checkAnswer(chatId, correctAnswer);
+        System.out.println(isCorrect);
+
+        // Завершаем вызов
+        logicBot.endChallenge(chatId);
+
+        assertTrue(isCorrect, "Ожидается, что ответ будет правильным");
+    }
 
     /**
      * Тестирование метода endChallenge.
