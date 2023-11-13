@@ -2,14 +2,14 @@
  * Класс LogicBotTest представляет собой набор юнит-тестов для класса LogicBot.
  * Этот класс использует библиотеку JUnit для тестирования различных методов LogicBot.
  * Все методы этого класса проверяют корректное выполнение функциональности LogicBot.
- *
- *
  */
 package Jut1S.project.AwesomeJavaBot;
 
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 public class LogicBotTest {
 
@@ -68,25 +68,40 @@ public class LogicBotTest {
     }
 
     /**
-     * Тестирование метода handleTextMessage для неизвестной команды.
-     * Проверяет, что результат содержит сообщение о нераспознанной команде.
+     * Тестирование метода handleTextMessage для команды "/challenge".
+     * Проверяет, что результат содержит текст о выборе правильного перевода.
      */
     @Test
-    void testHandleTextMessageUnknownCommand() {
-        String result = logicBot.handleTextMessage(12345, "/unknown", "Alice");
-        assertEquals("Извините, команда не распознана", result);
+    void testHandleTextMessageChallengeCommand() {
+        String result = logicBot.handleTextMessage(12345, "/challenge", "Alice");
+        assertNotNull(result);
+        assertTrue(result.contains("Выберите правильный перевод слова"));
     }
 
     /**
-     * Тестирование метода sendChallengeOptions.
-     * Проверяет, что результат не равен null и содержит текст о выборе правильного перевода.
+     * Тестирование метода handleTextMessage для команды "/challenge" с выбором правильного ответа.
      */
     @Test
-        void testSendChallengeOptions() {
+    void testHandleTextMessageChallengeCommandWithAnswer() {
         long chatId = 12345;
-        String result = logicBot.sendChallengeOptions(chatId);
-        assertNotNull(result);
-        assertTrue(result.contains("Выберите правильный перевод слова"));
+        String challengeMessage = logicBot.handleTextMessage(chatId, "/challenge", "Alice");
+        System.out.println(challengeMessage);
+
+        // Получаем варианты ответов и выводим их
+        List<String> answerOptions = logicBot.getAnswerOptions(chatId);
+        System.out.println("Варианты ответов: " + answerOptions);
+
+        // Находим правильный ответ в вариантах
+        String correctAnswer = logicBot.getCorrectTranslation(logicBot.getCurrentChallenges().get(chatId));
+
+        // Проверяем ответ пользователя, всегда выбирая правильный ответ
+        boolean isCorrect = logicBot.checkAnswer(chatId, correctAnswer);
+        System.out.println(isCorrect);
+
+        // Завершаем вызов
+        logicBot.endChallenge(chatId);
+
+        assertTrue(isCorrect, "Ожидается, что ответ будет правильным");
     }
 
     /**

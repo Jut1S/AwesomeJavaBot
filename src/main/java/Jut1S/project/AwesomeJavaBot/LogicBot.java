@@ -4,33 +4,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-/**
- * Класс `LogicBot` представляет собой бота для обработки текстовых сообщений и выполнения вызовов.
- * Он предоставляет функциональность для обработки команд `/start`, `/help`, `/time`, `/challenge` и `/endchallenge`.
- * Также класс управляет списком доступных вызовов и вариантами ответов.
- */
 public class LogicBot {
 
-
-    // Список текущих вызовов для каждого пользователя
     private Map<Long, String> currentChallenges = new HashMap<>();
-
-    // Индексы текущих вызовов для каждого пользователя
     private Map<Long, Integer> currentChallengeIndices = new HashMap<>();
-
-    // Словарь с вариантами ответов на вызовы
     private Map<String, List<String>> challengeOptions = new HashMap<>();
 
-    /**
-     * Конструктор класса `LogicBot`. Инициализирует список доступных вызовов и вариантов ответов.
-     */
     public LogicBot() {
         initializeChallengeOptions();
     }
 
-    /**
-     * Инициализирует список доступных вызовов и их вариантов ответов.
-     */
     private void initializeChallengeOptions() {
         challengeOptions.put("дом", Arrays.asList("house", "water", "building", "cat"));
         challengeOptions.put("дерево", Arrays.asList("tree", "flag", "forest", "bird"));
@@ -38,14 +21,6 @@ public class LogicBot {
         // Добавьте другие слова и варианты ответов по аналогии
     }
 
-    /**
-     * Обрабатывает текстовое сообщение от пользователя и выполняет соответствующее действие в зависимости от команды.
-     *
-     * @param chatId Идентификатор чата пользователя.
-     * @param messageText Текстовое сообщение от пользователя.
-     * @param name Имя пользователя.
-     * @return Ответ на сообщение или информацию о доступных командах.
-     */
     public String handleTextMessage(long chatId, String messageText, String name) {
         switch (messageText) {
             case "/start":
@@ -70,32 +45,15 @@ public class LogicBot {
         }
     }
 
-    /**
-     * Завершает текущий вызов для пользователя.
-     *
-     * @param chatId Идентификатор чата пользователя.
-     */
     public void endChallenge(long chatId) {
         currentChallenges.remove(chatId);
         currentChallengeIndices.remove(chatId);
     }
 
-    /**
-     * Обрабатывает команду `/start` и возвращает приветственное сообщение.
-     *
-     * @param name Имя пользователя.
-     * @return Приветственное сообщение для пользователя.
-     */
     public String startCommandReceived(String name) {
         return "Привет, " + name + ", приятно познакомиться!";
     }
 
-    /**
-     * Отправляет пользователю вызов с вариантами ответов.
-     *
-     * @param chatId Идентификатор чата пользователя.
-     * @return Текущий вызов для угадывания.
-     */
     public String sendChallengeOptions(long chatId) {
         int challengeIndex = currentChallengeIndices.getOrDefault(chatId, 0);
         int totalChallenges = challengeOptions.size();
@@ -110,13 +68,6 @@ public class LogicBot {
         return "Выберите правильный перевод слова '" + challenge + "':";
     }
 
-    /**
-     * Обрабатывает callback-запрос от пользователя, связанный с текущим вызовом.
-     *
-     * @param chatId Идентификатор чата пользователя.
-     * @param data Данные callback-запроса (например, "correct" или "incorrect").
-     * @return Результат обработки callback-запроса.
-     */
     public String handleCallbackQuery(long chatId, String data) {
         if (data.equals("correct")) {
             sendChallengeOptions(chatId);
@@ -128,21 +79,40 @@ public class LogicBot {
         return "Неверная команда.";
     }
 
-    /**
-     * Возвращает вызов по индексу из списка доступных вызовов.
-     *
-     * @param index Индекс вызова.
-     * @return Слово для перевода в текущем вызове.
-     */
     private String getChallengeByIndex(int index) {
         List<String> challenges = new ArrayList<>(challengeOptions.keySet());
         return challenges.get(index);
     }
+
+    public List<String> getAnswerOptions(long chatId) {
+        String correctAnswer = currentChallenges.get(chatId);
+        List<String> options = new ArrayList<>();
+        options.add(correctAnswer);
+
+        if (challengeOptions.containsKey(correctAnswer)) {
+            options.addAll(challengeOptions.get(correctAnswer));
+        }
+
+        // Перемешиваем варианты ответов
+        Collections.shuffle(options);
+
+        return options;
+    }
+
+    public boolean checkAnswer(long chatId, String selectedOption) {
+        String correctAnswer = getCorrectTranslation(currentChallenges.get(chatId));
+        return selectedOption.equals(correctAnswer);
+    }
+
+    String getCorrectTranslation(String word) {
+        return challengeOptions.get(word).get(0);
+    }
+
     public Map<Long, String> getCurrentChallenges() {
         return currentChallenges;
     }
+
     public Map<Long, Integer> getCurrentChallengeIndices() {
         return currentChallengeIndices;
     }
-
 }
