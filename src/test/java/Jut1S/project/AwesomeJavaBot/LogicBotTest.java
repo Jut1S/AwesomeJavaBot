@@ -8,12 +8,17 @@ package Jut1S.project.AwesomeJavaBot;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
+import java.util.Map;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class LogicBotTest {
 
     private LogicBot logicBot;
+    private long chatId = 123456789;
+    
 
     /**
      * Метод setUp выполняется перед каждым тестовым методом и инициализирует экземпляр LogicBot.
@@ -79,31 +84,30 @@ public class LogicBotTest {
     }
 
     /**
-     * Тестирование метода handleTextMessage для команды "/challenge" с выбором правильного ответа.
+     * Тестирование метода testSendChallengeOptions для команды "/challenge" с выбором правильного ответа.
      */
     @Test
-    void testHandleTextMessageChallengeCommandWithAnswer() {
-        long chatId = 12345;
-        String challengeMessage = logicBot.handleTextMessage(chatId, "/challenge", "Alice");
-        System.out.println(challengeMessage);
+    public void testSendChallengeOptions() {
+        String result = logicBot.handleTextMessage(chatId, "/challenge", "TestUser");
 
-        // Получаем варианты ответов и выводим их
+
+        // Проверяем, что возвращаемый текст начинается с ожидаемой строки
+        assertTrue(result.startsWith("Выберите правильный перевод слова '"));
+
+        // Проверяем, что возвращаемый текст не содержит имя пользователя
+        assertTrue(!result.contains("TestUser"));
+
+        // Проверяем, что вызов добавлен в текущие вызовы
+        Map<Long, String> currentChallenges = logicBot.getCurrentChallenges();
+        assertTrue(currentChallenges.containsKey(chatId));
+
+
+        // Проверяем, что текст вызова содержит одно из слов, предложенных вариантами ответа
         List<String> answerOptions = logicBot.getAnswerOptions(chatId);
-        System.out.println("Варианты ответов: " + answerOptions);
 
-        // Находим правильный ответ в вариантах
-        String correctAnswer = logicBot.getCorrectTranslation(logicBot.getCurrentChallenges().get(chatId));
-
-        // Проверяем ответ пользователя, всегда выбирая правильный ответ
-        boolean isCorrect = logicBot.checkAnswer(chatId, correctAnswer);
-        System.out.println(isCorrect);
-
-        // Завершаем вызов
-        logicBot.endChallenge(chatId);
-
-        assertTrue(isCorrect, "Ожидается, что ответ будет правильным");
+        // Проверяем, что хотя бы один из вариантов ответа совпадает с вызовом
+        assertTrue(answerOptions.stream().anyMatch(option -> logicBot.checkAnswer(chatId, option)));
     }
-
     /**
      * Тестирование метода endChallenge.
      * Проверяет, что после завершения вызова sendChallengeOptions
