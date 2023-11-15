@@ -1,25 +1,22 @@
 package Jut1S.project.AwesomeJavaBot;
 
+
+import java.util.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
 
 public class LogicBot {
 
+
     private Map<Long, String> currentChallenges = new HashMap<>();
     private Map<Long, Integer> currentChallengeIndices = new HashMap<>();
+
     private Map<String, List<String>> challengeOptions = new HashMap<>();
 
     public LogicBot() {
         initializeChallengeOptions();
     }
 
-    private void initializeChallengeOptions() {
-        challengeOptions.put("дом", Arrays.asList("house", "water", "building", "cat"));
-        challengeOptions.put("дерево", Arrays.asList("tree", "flag", "forest", "bird"));
-        challengeOptions.put("кот", Arrays.asList("cat", "dog", "cucumber", "lamb"));
-        // Добавьте другие слова и варианты ответов по аналогии
-    }
 
     public String handleTextMessage(long chatId, String messageText, String name) {
         switch (messageText) {
@@ -36,7 +33,7 @@ public class LogicBot {
                 LocalDateTime now = LocalDateTime.now();
                 return dtf.format(now);
             case "/challenge":
-                return sendChallengeOptions(chatId);
+                sendChallengeOptions(chatId);
             case "/endchallenge":
                 endChallenge(chatId);
                 return "Вы завершили вызов. Можете начать новый вызов с командой /challenge.";
@@ -45,47 +42,53 @@ public class LogicBot {
         }
     }
 
-    public void endChallenge(long chatId) {
-        currentChallenges.remove(chatId);
-        currentChallengeIndices.remove(chatId);
+    private void initializeChallengeOptions() {
+        challengeOptions.put("дом", Arrays.asList("house", "water", "building", "cat"));
+        challengeOptions.put("дерево", Arrays.asList("tree", "flag", "forest", "bird"));
+        challengeOptions.put("кот", Arrays.asList("cat", "dog", "cucumber", "lamb"));
+        // Добавьте другие слова и варианты ответов по аналогии
     }
 
     public String startCommandReceived(String name) {
         return "Привет, " + name + ", приятно познакомиться!";
     }
 
-    public String sendChallengeOptions(long chatId) {
-        int challengeIndex = currentChallengeIndices.getOrDefault(chatId, 0);
-        int totalChallenges = challengeOptions.size();
 
-        if (totalChallenges == 0) {
-            return "Список слов пуст.";
-        }
 
-        String challenge = getChallengeByIndex(challengeIndex);
-        currentChallenges.put(chatId, challenge);
-        currentChallengeIndices.put(chatId, challengeIndex);
-        return "Выберите правильный перевод слова '" + challenge + "':";
+    public void endChallenge(long chatId) {
+        currentChallenges.remove(chatId);
+        currentChallengeIndices.remove(chatId);
+        System.out.println("Вы завершили вызов. Можете начать новый вызов с вызовом метода sendChallengeOptions.");
     }
 
-    public String handleCallbackQuery(long chatId, String data) {
-        if (data.equals("correct")) {
+    public void handleCallbackQuery(long chatId, String data) {
+        String currentChallenge = currentChallenges.get(chatId);
+        String correctTranslation = getCorrectTranslation(currentChallenge);
+
+        if (data.equals(correctTranslation)) {
+            System.out.println("correct");
             sendChallengeOptions(chatId);
-            return "Правильно! Отличная работа!";
-        } else if (data.equals("incorrect")) {
-            String currentChallenge = currentChallenges.get(chatId);
-            return "Увы, неправильно. Попробуйте еще раз. Вызов: " + currentChallenge;
+        } else {
+            System.out.println("incorrect");
+            System.out.println("Неправильный ответ. Попробуйте еще раз.");
+            // Повторно отправляем текущий вызов
+            sendChallengeOptionsTwo(chatId, currentChallenge);
         }
-        return "Неверная команда.";
     }
 
-    private String getChallengeByIndex(int index) {
-        List<String> challenges = new ArrayList<>(challengeOptions.keySet());
-        return challenges.get(index);
+    public void sendChallengeOptionsTwo(long chatId, String challenge) {
+        System.out.println("Выберите правильный перевод слова '" + challenge + "':");
+
+        List<String> answerOptions = getAnswerOptions(challenge);
+
+        for (String option : answerOptions) {
+            if (!option.equals(challenge)) {
+                System.out.println(option);
+            }
+        }
     }
 
-    public List<String> getAnswerOptions(long chatId) {
-        String correctAnswer = currentChallenges.get(chatId);
+    private List<String> getAnswerOptions(String correctAnswer) {
         List<String> options = new ArrayList<>();
         options.add(correctAnswer);
 
@@ -99,13 +102,38 @@ public class LogicBot {
         return options;
     }
 
-    public boolean checkAnswer(long chatId, String selectedOption) {
-        String correctAnswer = getCorrectTranslation(currentChallenges.get(chatId));
-        return selectedOption.equals(correctAnswer);
+    String getCorrectTranslation(String word) {
+        List<String> translations = challengeOptions.get(word);
+
+        if (translations != null && !translations.isEmpty()) {
+            return translations.get(0);
+        } else {
+            // Обработайте случай, когда переводы равны null или пусты
+            return "Перевод не найден";
+        }
     }
 
-    String getCorrectTranslation(String word) {
-        return challengeOptions.get(word).get(0);
+
+    private String getChallengeByIndex(int index) {
+        List<String> challenges = new ArrayList<>(challengeOptions.keySet());
+        return challenges.get(index);
+    }
+
+    public void sendChallengeOptions(long chatId) {
+        int challengeIndex = currentChallengeIndices.getOrDefault(chatId, 0);
+        int totalChallenges = challengeOptions.size();
+
+        if (totalChallenges == 0) {
+            System.out.println("Список слов пуст.");
+            return;
+        }
+
+        String challenge = getChallengeByIndex(challengeIndex);
+        currentChallenges.put(chatId, challenge);
+        sendChallengeOptionsTwo(chatId, challenge);
+
+        challengeIndex = (challengeIndex + 1) % totalChallenges;
+        currentChallengeIndices.put(chatId, challengeIndex);
     }
 
     public Map<Long, String> getCurrentChallenges() {
@@ -115,4 +143,35 @@ public class LogicBot {
     public Map<Long, Integer> getCurrentChallengeIndices() {
         return currentChallengeIndices;
     }
+
+    public Map<String, List<String>> getChallengeOptions() {
+        return challengeOptions;
+    }
+
+    public static void main(String[] args) {
+        LogicBot logicBot = new LogicBot();
+        Scanner scanner = new Scanner(System.in);
+
+        long chatId = 123; // Замените 123 на реальный идентификатор чата
+
+        // Цикл взаимодействия с пользователем
+        while (true) {
+            logicBot.sendChallengeOptions(chatId);
+
+            System.out.println("Введите ваш ответ (или 'exit' для завершения):");
+            String userAnswer = scanner.nextLine(); // Получаем ответ пользователя
+
+            if ("exit".equalsIgnoreCase(userAnswer)) {
+                System.out.println("Бот завершает работу.");
+                break;
+            }
+
+            logicBot.handleCallbackQuery(chatId, userAnswer);
+        }
+
+        scanner.close();
+    }
 }
+
+
+
