@@ -1,3 +1,11 @@
+/**
+ * LogicBot - это телеграм-бот, предназначенный для выполнения различных команд и предоставления
+ * вызовов. Поддерживаются команды, такие как /start, /help, /time и /challenge. Команда /challenge
+ * предлагает пользователю слово на русском языке и просит его перевести на английский. Бот отслеживает
+ * текущие вызовы и предоставляет обратную связь по ответам пользователя.
+ */
+
+
 package Jut1S.project.AwesomeJavaBot;
 
 
@@ -13,11 +21,22 @@ public class LogicBot {
 
     private Map<String, List<String>> challengeOptions = new HashMap<>();
 
+
+    /**
+     * Конструктор LogicBot инициализирует варианты вызовов.
+     */
     public LogicBot() {
         initializeChallengeOptions();
     }
 
-
+    /**
+     * Обрабатывает входящие текстовые сообщения и выполняет соответствующие команды.
+     *
+     * @param chatId       Идентификатор чата в Telegram.
+     * @param messageText  Текст входящего сообщения.
+     * @param name         Имя пользователя, отправившего сообщение.
+     * @return Ответное сообщение на основе полученной команды.
+     */
     public String handleTextMessage(long chatId, String messageText, String name) {
         switch (messageText) {
             case "/start":
@@ -42,6 +61,10 @@ public class LogicBot {
         }
     }
 
+
+    /**
+     * Инициализирует варианты слов для вызовов.
+     */
     private void initializeChallengeOptions() {
         challengeOptions.put("дом", Arrays.asList("house", "water", "building", "cat"));
         challengeOptions.put("дерево", Arrays.asList("tree", "flag", "forest", "bird"));
@@ -49,18 +72,36 @@ public class LogicBot {
         // Добавьте другие слова и варианты ответов по аналогии
     }
 
+
+    /**
+     * Обрабатывает команду /start и возвращает приветственное сообщение с именем пользователя.
+     *
+     * @param name Имя пользователя.
+     * @return Приветственное сообщение.
+     */
     public String startCommandReceived(String name) {
         return "Привет, " + name + ", приятно познакомиться!";
     }
 
 
-
+    /**
+     * Завершает текущий вызов для указанного идентификатора чата.
+     *
+     * @param chatId Идентификатор чата в Telegram.
+     */
     public void endChallenge(long chatId) {
         currentChallenges.remove(chatId);
         currentChallengeIndices.remove(chatId);
         System.out.println("Вы завершили вызов. Можете начать новый вызов с вызовом метода sendChallengeOptions.");
     }
 
+
+    /**
+     * Обрабатывает ответ пользователя на вызов и проверяет его правильность.
+     *
+     * @param chatId Идентификатор чата в Telegram.
+     * @param data   Ответ пользователя.
+     */
     public void handleCallbackQuery(long chatId, String data) {
         String currentChallenge = currentChallenges.get(chatId);
         String correctTranslation = getCorrectTranslation(currentChallenge);
@@ -76,6 +117,13 @@ public class LogicBot {
         }
     }
 
+
+    /**
+     * Отправляет варианты ответов пользователю для указанного вызова.
+     *
+     * @param chatId    Идентификатор чата в Telegram.
+     * @param challenge Слово вызова.
+     */
     public void sendChallengeOptionsTwo(long chatId, String challenge) {
         System.out.println("Выберите правильный перевод слова '" + challenge + "':");
 
@@ -88,6 +136,13 @@ public class LogicBot {
         }
     }
 
+
+    /**
+     * Возвращает список вариантов ответов для указанного слова вызова.
+     *
+     * @param correctAnswer Правильный ответ на вызов.
+     * @return Список вариантов ответов, включая правильный ответ.
+     */
     private List<String> getAnswerOptions(String correctAnswer) {
         List<String> options = new ArrayList<>();
         options.add(correctAnswer);
@@ -102,6 +157,12 @@ public class LogicBot {
         return options;
     }
 
+    /**
+     * Возвращает правильный перевод для указанного слова вызова.
+     *
+     * @param word Слово вызова.
+     * @return Правильный перевод слова вызова.
+     */
     String getCorrectTranslation(String word) {
         List<String> translations = challengeOptions.get(word);
 
@@ -113,12 +174,23 @@ public class LogicBot {
         }
     }
 
-
+    /**
+     * Возвращает слово вызова по указанному индексу.
+     *
+     * @param index Индекс слова вызова.
+     * @return Слово вызова.
+     */
     private String getChallengeByIndex(int index) {
         List<String> challenges = new ArrayList<>(challengeOptions.keySet());
         return challenges.get(index);
     }
 
+
+    /**
+     * Отправляет варианты ответов для вызова пользователю в указанном чате.
+     *
+     * @param chatId Идентификатор чата в Telegram.
+     */
     public void sendChallengeOptions(long chatId) {
         int challengeIndex = currentChallengeIndices.getOrDefault(chatId, 0);
         int totalChallenges = challengeOptions.size();
@@ -136,41 +208,35 @@ public class LogicBot {
         currentChallengeIndices.put(chatId, challengeIndex);
     }
 
+    /**
+     * Возвращает текущие вызовы для всех чатов.
+     *
+     * @return Карта с текущими вызовами по идентификаторам чатов.
+     */
     public Map<Long, String> getCurrentChallenges() {
         return currentChallenges;
     }
 
+
+    /**
+     * Возвращает текущие индексы вызовов для всех чатов.
+     *
+     * @return Карта с текущими индексами вызовов по идентификаторам чатов.
+     */
     public Map<Long, Integer> getCurrentChallengeIndices() {
         return currentChallengeIndices;
     }
 
+
+    /**
+     * Возвращает варианты слов для вызовов.
+     *
+     * @return Карта с вариантами слов для вызовов.
+     */
     public Map<String, List<String>> getChallengeOptions() {
         return challengeOptions;
     }
 
-    public static void main(String[] args) {
-        LogicBot logicBot = new LogicBot();
-        Scanner scanner = new Scanner(System.in);
-
-        long chatId = 123; // Замените 123 на реальный идентификатор чата
-
-        // Цикл взаимодействия с пользователем
-        while (true) {
-            logicBot.sendChallengeOptions(chatId);
-
-            System.out.println("Введите ваш ответ (или 'exit' для завершения):");
-            String userAnswer = scanner.nextLine(); // Получаем ответ пользователя
-
-            if ("exit".equalsIgnoreCase(userAnswer)) {
-                System.out.println("Бот завершает работу.");
-                break;
-            }
-
-            logicBot.handleCallbackQuery(chatId, userAnswer);
-        }
-
-        scanner.close();
-    }
 }
 
 
